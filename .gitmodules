@@ -1,0 +1,24 @@
+[submodule "apps/api-gateway"]
+	path = apps/api-gateway
+	url = https://github.com/KatarSaad/api-gateway.git
+[submodule "apps/auth-service"]
+	path = apps/auth-service
+	url = https://github.com/KatarSaad/auth-service.git
+[submodule "apps/job-service"]
+	path = apps/job-service
+	url = https://github.com/KatarSaad/job-service.git
+[submodule "apps/recruiting-service"]
+	path = apps/recruiting-service
+	url = https://github.com/KatarSaad/recruiting-service.git
+[submodule "apps/notification-service"]
+	path = apps/notification-service
+	url = https://github.com/KatarSaad/notification-service.git
+[submodule "libs/common"]
+	path = libs/common
+	url = https://github.com/KatarSaad/libs-common.git
+[submodule "libs/core"]
+	path = libs/core
+	url = https://github.com/KatarSaad/libs-core.git
+[submodule "libs/infrastructure"]
+	path = libs/infrastructure
+	url = https://github.com/KatarSaad/libs-infrastructure.git
