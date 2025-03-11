@@ -22,3 +22,7 @@
 [submodule "libs/infrastructure"]
 	path = libs/infrastructure
 	url = https://github.com/KatarSaad/libs-infrastructure.git
+
+[submodule "apps/starter_application"]
+	path = apps/starter_application
+	url = https://github.com/KatarSaad/starter-microservice.git
