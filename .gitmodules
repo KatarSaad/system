@@ -26,3 +26,6 @@
 [submodule "apps/starter_application"]
 	path = apps/starter_application
 	url = https://github.com/KatarSaad/starter-microservice.git
+[submodule "apps/logger-microservice"]
+	path = apps/logger-microservice
+	url = https://github.com/KatarSaad/logger-microservice.git
