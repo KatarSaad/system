@@ -1,0 +1,27 @@
+# Base stage for all builds
+FROM node:18-alpine AS base
+WORKDIR /usr/src/app
+
+# Dependencies stage - this will cache the node_modules
+FROM base AS dependencies
+COPY package*.json ./
+RUN npm ci --only=production
+# Copy production dependencies to a separate directory
+RUN cp -R node_modules prod_modules
+# Install ALL dependencies (including devDependencies)
+RUN npm ci
+
+# Development stage
+FROM base AS development
+# Copy package files
+COPY package*.json ./
+# Copy cached node_modules from dependencies stage
+COPY --from=dependencies /usr/src/app/node_modules ./node_modules
+# Install development tools globally
+RUN npm install -g nodemon ts-node typescript ts-node-dev
+
+# Copy source code (will be overridden by volume mount in development)
+COPY . .
+
+# Default command (can be overridden in docker-compose)
+CMD ["npm", "run", "start:dev"]

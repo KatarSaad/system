@@ -1,0 +1,203 @@
+services:
+  api-gateway:
+    build:
+      context: ./apps/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    volumes:
+      - ./apps/api-gateway:/usr/src/app
+      - api-gateway-node-modules:/usr/src/app/node_modules
+    ports:
+      - '3000:3000'
+    env_file:
+      - ./apps/api-gateway/.env
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - RMQ_URL=amqp://rabbitmq:5672
+      - RMQ_QUEUE_API_GATEWAY=api_gateway
+      - RMQ_QUEUE_USER=user_queue
+      - RMQ_QUEUE_LOGGER=logging_queue
+      - RMQ_QUEUE_AUTH=auth_queue
+    command: npm run start:dev
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+
+  auth-service:
+    build:
+      context: ./apps/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    volumes:
+      - ./apps/auth-service:/usr/src/app
+      - auth-service-node-modules:/usr/src/app/node_modules
+    ports:
+      - '3010:3000' # Changed host port to 3010 to avoid conflict
+    env_file:
+      - ./apps/auth-service/.env
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - RMQ_URL=amqp://rabbitmq:5672
+      - RMQ_QUEUE_AUTH=auth_queue
+      - RMQ_QUEUE_USER=user_queue
+      - RMQ_QUEUE_LOGGER=logging_queue
+    command: npm run start:dev
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+
+  logger-microservice:
+    build:
+      context: ./apps/logger-microservice
+      dockerfile: Dockerfile
+    container_name: logger-microservice
+    volumes:
+      - ./apps/logger-microservice:/usr/src/app
+      - logger-microservice-node-modules:/usr/src/app/node_modules
+    ports:
+      - '3002:3002'
+    env_file:
+      - ./apps/logger-microservice/.env
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - RMQ_URL=amqp://rabbitmq:5672
+      - RMQ_QUEUE_LOGGER=logging_queue
+    command: npm run start:dev
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+
+  starter-application:
+    build:
+      context: ./apps/starter_application
+      dockerfile: Dockerfile
+    container_name: starter-application
+    volumes:
+      - ./apps/starter_application:/app
+      - starter-application-node-modules:/app/node_modules
+    ports:
+      - '1000:1000'
+    env_file:
+      - ./apps/starter_application/.env
+    environment:
+      - PORT=1000
+      - NODE_ENV=production
+      - CHOKIDAR_USEPOLLING=true
+      - DATABASE_URL=mysql://root:saad123@mysql:3306/starter
+      - CACHE_ENABLED=true
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=my-password
+      - CACHE_DEFAULT_TTL=300
+      - RMQ_ENABLED=true
+      - RMQ_URL=amqp://rabbitmq:5672
+      - RMQ_QUEUE_API_GATEWAY=api_gateway
+      - RMQ_QUEUE_USER=user_queue
+      - RMQ_QUEUE_LOGGER=logging_queue
+      - RMQ_QUEUE_AUTH=auth_queue
+      - RMQ_RETRY_DELAY=5000
+      - RMQ_CONNECTION_TIMEOUT=10000
+      - SERVICE_NAME=starter-application
+    depends_on:
+      - prometheus
+      - jaeger
+      - mysql
+      - rabbitmq
+      - redis
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./apps/starter_application/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - '9090:9090'
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - '3001:3000'
+    depends_on:
+      - prometheus
+    networks:
+      - app-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - '5775:5775/udp'
+      - '6831:6831/udp'
+      - '6832:6832/udp'
+      - '5778:5778'
+      - '16686:16686'
+      - '14268:14268'
+      - '14250:14250'
+      - '9411:9411'
+    networks:
+      - app-network
+
+  rabbitmq:
+    image: 'rabbitmq:management'
+    container_name: 'rabbitmq'
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit mq_frame_max 8192
+    networks:
+      - app-network
+
+  redis:
+    image: 'redis:alpine'
+    container_name: redis
+    networks:
+      - app-network
+
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: saad123
+      MYSQL_DATABASE: starter
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - '3308:3306'
+    networks:
+      - app-network
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'mysql']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  grafana-data:
+  api-gateway-node-modules:
+  auth-service-node-modules:
+  logger-microservice-node-modules:
+  starter-application-node-modules:
